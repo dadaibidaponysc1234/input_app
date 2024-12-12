@@ -201,8 +201,8 @@ const HandwritingCanvas = () => {
     <div className="flex flex-col items-center w-full h-full">
       <h1 className="text-2xl font-bold mb-4">Handwriting Tool</h1>
       <div className="mb-4 flex space-x-4">
-        <Pencil onClick={() => setEraserMode(false)} className="h-8 w-8 cursor-pointer text-blue-500" />
-        <Eraser onClick={() => setEraserMode(true)} className="h-8 w-8 cursor-pointer text-green-500" />
+        <Pencil onClick={() => setEraserMode(false)} onTouchMove={() => setEraserMode(false)} className="h-8 w-8 cursor-pointer text-blue-500" />
+        <Eraser onClick={() => setEraserMode(true)} onTouchMove={() => setEraserMode(true)} className="h-8 w-8 cursor-pointer text-green-500" />
         <input type="color" value={strokeColor} onChange={(e) => setStrokeColor(e.target.value)} />
         <input type="range" min="1" max="40" value={strokeWidth} onChange={(e) => setStrokeWidth(Number(e.target.value))} />
         <button onClick={handleUndo}>Undo</button>
@@ -217,7 +217,7 @@ const HandwritingCanvas = () => {
           onMouseOut={handleStopDrawing}
         ></canvas>
       </div>
-      <div className="mb-4 flex space-x-4">
+      <div className="mb-4 flex space-x-4 mt-5">
         <button className="px-4 py-2 bg-green-500 text-white rounded" onClick={handlePrevPage}>Previous Page</button>
         <button className="px-4 py-2 bg-green-500 text-white rounded" onClick={handleNewPage}>Next Page</button>
         <button className="px-4 py-2 bg-orange-500 text-white rounded" onClick={handleClear}>Clear</button>
