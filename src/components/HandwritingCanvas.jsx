@@ -15,7 +15,7 @@ const HandwritingCanvas = () => {
   const [pages, setPages] = useState([null]);
   const [currentPage, setCurrentPage] = useState(0);
 
-  // Resize canvas dynamically
+  // Update canvas size dynamically
   const updateCanvasSize = () => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -36,7 +36,7 @@ const HandwritingCanvas = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const currentData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    setUndoStack([...undoStack, currentData]);
+    setUndoStack((prev) => [...prev, currentData]);
     setRedoStack([]); // Clear redo stack after new actions
   };
 
@@ -51,13 +51,6 @@ const HandwritingCanvas = () => {
     };
   };
 
-  // const handleStartDrawing = (x, y) => {
-  //   setIsDrawing(true);
-  //   saveCurrentState();
-  //   const ctx = canvasRef.current.getContext("2d");
-  //   ctx.beginPath();
-  //   ctx.moveTo(x, y);
-  // };
   const handleStartDrawing = (e) => {
     const { x, y } = getPointerPosition(e);
     setIsDrawing(true);
@@ -66,16 +59,6 @@ const HandwritingCanvas = () => {
     ctx.beginPath();
     ctx.moveTo(x, y);
   };
-
-  // const handleDraw = (x, y) => {
-  //   if (!isDrawing) return;
-  //   const ctx = canvasRef.current.getContext("2d");
-  //   ctx.lineWidth = strokeWidth;
-  //   ctx.lineCap = "round";
-  //   ctx.strokeStyle = eraserMode ? "#ffffff" : strokeColor;
-  //   ctx.lineTo(x, y);
-  //   ctx.stroke();
-  // };
 
   const handleDraw = (e) => {
     if (!isDrawing) return;
@@ -92,40 +75,36 @@ const HandwritingCanvas = () => {
     setIsDrawing(false);
   };
 
-  const addEventListeners = () => {
+  useEffect(() => {
     const canvas = canvasRef.current;
-    canvas.addEventListener("touchstart", handleStartDrawing);
-    canvas.addEventListener("touchmove", handleDraw);
-    canvas.addEventListener("touchend", handleStopDrawing);
-    canvas.addEventListener("mousedown", (e) => handleStartDrawing(e));
-    canvas.addEventListener("mousemove", (e) => handleDraw(e));
+    const handleTouchStart = (e) => handleStartDrawing(e);
+    const handleTouchMove = (e) => handleDraw(e);
+    const handleTouchEnd = handleStopDrawing;
+
+    canvas.addEventListener("touchstart", handleTouchStart);
+    canvas.addEventListener("touchmove", handleTouchMove);
+    canvas.addEventListener("touchend", handleTouchEnd);
+    canvas.addEventListener("mousedown", handleStartDrawing);
+    canvas.addEventListener("mousemove", handleDraw);
     canvas.addEventListener("mouseup", handleStopDrawing);
     canvas.addEventListener("mouseout", handleStopDrawing);
-  };
 
-  const removeEventListeners = () => {
-    const canvas = canvasRef.current;
-    canvas.removeEventListener("touchstart", handleStartDrawing);
-    canvas.removeEventListener("touchmove", handleDraw);
-    canvas.removeEventListener("touchend", handleStopDrawing);
-    canvas.removeEventListener("mousedown", handleStartDrawing);
-    canvas.removeEventListener("mousemove", handleDraw);
-    canvas.removeEventListener("mouseup", handleStopDrawing);
-    canvas.removeEventListener("mouseout", handleStopDrawing);
-  };
-
-  useEffect(() => {
-    addEventListeners();
-    return removeEventListeners;
-  }, [strokeColor, strokeWidth, eraserMode, isDrawing]);
-
-
+    return () => {
+      canvas.removeEventListener("touchstart", handleTouchStart);
+      canvas.removeEventListener("touchmove", handleTouchMove);
+      canvas.removeEventListener("touchend", handleTouchEnd);
+      canvas.removeEventListener("mousedown", handleStartDrawing);
+      canvas.removeEventListener("mousemove", handleDraw);
+      canvas.removeEventListener("mouseup", handleStopDrawing);
+      canvas.removeEventListener("mouseout", handleStopDrawing);
+    };
+  }, [strokeColor, strokeWidth, eraserMode]);
 
   const handleUndo = () => {
     if (undoStack.length === 0) return;
     const ctx = canvasRef.current.getContext("2d");
     const lastState = undoStack.pop();
-    setRedoStack([...redoStack, ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height)]);
+    setRedoStack((prev) => [...prev, ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height)]);
     ctx.putImageData(lastState, 0, 0);
     setUndoStack([...undoStack]);
   };
@@ -134,7 +113,7 @@ const HandwritingCanvas = () => {
     if (redoStack.length === 0) return;
     const ctx = canvasRef.current.getContext("2d");
     const nextState = redoStack.pop();
-    setUndoStack([...undoStack, ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height)]);
+    setUndoStack((prev) => [...prev, ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height)]);
     ctx.putImageData(nextState, 0, 0);
     setRedoStack([...redoStack]);
   };
@@ -228,13 +207,11 @@ const HandwritingCanvas = () => {
     const canvasHeight = canvasRef.current.height;
     const totalHeight = canvasHeight * pages.length;
 
-    // Create a large canvas to hold all pages
     const combinedCanvas = document.createElement("canvas");
     combinedCanvas.width = canvasWidth;
     combinedCanvas.height = totalHeight;
     const ctx = combinedCanvas.getContext("2d");
 
-    // Draw each page onto the combined canvas
     for (let i = 0; i < pages.length; i++) {
       if (pages[i]) {
         const img = new Image();
@@ -248,7 +225,6 @@ const HandwritingCanvas = () => {
       }
     }
 
-    // Convert combined canvas to an image and trigger download
     const combinedImage = combinedCanvas.toDataURL("image/png");
     const link = document.createElement("a");
     link.href = combinedImage;
@@ -270,8 +246,8 @@ const HandwritingCanvas = () => {
       <div ref={containerRef} className="w-11/12 h-[70vh] border-2">
         <canvas
           ref={canvasRef}
-          onMouseDown={(e) => handleStartDrawing(e.nativeEvent.offsetX, e.nativeEvent.offsetY)}
-          onMouseMove={(e) => handleDraw(e.nativeEvent.offsetX, e.nativeEvent.offsetY)}
+          onMouseDown={(e) => handleStartDrawing(e)}
+          onMouseMove={(e) => handleDraw(e)}
           onMouseUp={handleStopDrawing}
           onMouseOut={handleStopDrawing}
         ></canvas>
