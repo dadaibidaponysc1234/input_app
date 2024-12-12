@@ -40,7 +40,26 @@ const HandwritingCanvas = () => {
     setRedoStack([]); // Clear redo stack after new actions
   };
 
-  const handleStartDrawing = (x, y) => {
+  const getPointerPosition = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const isTouch = e.touches && e.touches.length > 0;
+    const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+    const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
+  };
+
+  // const handleStartDrawing = (x, y) => {
+  //   setIsDrawing(true);
+  //   saveCurrentState();
+  //   const ctx = canvasRef.current.getContext("2d");
+  //   ctx.beginPath();
+  //   ctx.moveTo(x, y);
+  // };
+  const handleStartDrawing = (e) => {
+    const { x, y } = getPointerPosition(e);
     setIsDrawing(true);
     saveCurrentState();
     const ctx = canvasRef.current.getContext("2d");
@@ -48,8 +67,19 @@ const HandwritingCanvas = () => {
     ctx.moveTo(x, y);
   };
 
-  const handleDraw = (x, y) => {
+  // const handleDraw = (x, y) => {
+  //   if (!isDrawing) return;
+  //   const ctx = canvasRef.current.getContext("2d");
+  //   ctx.lineWidth = strokeWidth;
+  //   ctx.lineCap = "round";
+  //   ctx.strokeStyle = eraserMode ? "#ffffff" : strokeColor;
+  //   ctx.lineTo(x, y);
+  //   ctx.stroke();
+  // };
+
+  const handleDraw = (e) => {
     if (!isDrawing) return;
+    const { x, y } = getPointerPosition(e);
     const ctx = canvasRef.current.getContext("2d");
     ctx.lineWidth = strokeWidth;
     ctx.lineCap = "round";
@@ -61,6 +91,35 @@ const HandwritingCanvas = () => {
   const handleStopDrawing = () => {
     setIsDrawing(false);
   };
+
+  const addEventListeners = () => {
+    const canvas = canvasRef.current;
+    canvas.addEventListener("touchstart", handleStartDrawing);
+    canvas.addEventListener("touchmove", handleDraw);
+    canvas.addEventListener("touchend", handleStopDrawing);
+    canvas.addEventListener("mousedown", (e) => handleStartDrawing(e));
+    canvas.addEventListener("mousemove", (e) => handleDraw(e));
+    canvas.addEventListener("mouseup", handleStopDrawing);
+    canvas.addEventListener("mouseout", handleStopDrawing);
+  };
+
+  const removeEventListeners = () => {
+    const canvas = canvasRef.current;
+    canvas.removeEventListener("touchstart", handleStartDrawing);
+    canvas.removeEventListener("touchmove", handleDraw);
+    canvas.removeEventListener("touchend", handleStopDrawing);
+    canvas.removeEventListener("mousedown", handleStartDrawing);
+    canvas.removeEventListener("mousemove", handleDraw);
+    canvas.removeEventListener("mouseup", handleStopDrawing);
+    canvas.removeEventListener("mouseout", handleStopDrawing);
+  };
+
+  useEffect(() => {
+    addEventListeners();
+    return removeEventListeners;
+  }, [strokeColor, strokeWidth, eraserMode, isDrawing]);
+
+
 
   const handleUndo = () => {
     if (undoStack.length === 0) return;
@@ -201,8 +260,8 @@ const HandwritingCanvas = () => {
     <div className="flex flex-col items-center w-full h-full">
       <h1 className="text-2xl font-bold mb-4">Handwriting Tool</h1>
       <div className="mb-4 flex space-x-4">
-        <Pencil onClick={() => setEraserMode(false)} onTouchMove={() => setEraserMode(false)} className="h-8 w-8 cursor-pointer text-blue-500" />
-        <Eraser onClick={() => setEraserMode(true)} onTouchMove={() => setEraserMode(true)} className="h-8 w-8 cursor-pointer text-green-500" />
+        <Pencil onClick={() => setEraserMode(false)} className="h-8 w-8 cursor-pointer text-blue-500" />
+        <Eraser onClick={() => setEraserMode(true)} className="h-8 w-8 cursor-pointer text-green-500" />
         <input type="color" value={strokeColor} onChange={(e) => setStrokeColor(e.target.value)} />
         <input type="range" min="1" max="40" value={strokeWidth} onChange={(e) => setStrokeWidth(Number(e.target.value))} />
         <button onClick={handleUndo}>Undo</button>
